@@ -17,126 +17,337 @@
 
 ## Overview
 
-Sales calls contain valuable information about customer needs, objections, buying signals, and sales performance. But reviewing conversations one by one makes it difficult to turn that information into consistent, actionable insights.
+Sales calls contain valuable information about customer needs, objections, buying signals, and sales performance. The challenge is turning that information into useful insights without relying entirely on manual review.
 
-**Intelligent Sales Automation** uses AI and automated workflows to turn sales conversations into structured intelligence that supports better decisions.
+**Intelligent Sales Automation** uses AI, Retrieval-Augmented Generation (RAG), and n8n workflows to turn sales conversations into structured intelligence.
 
 The project has two complementary systems:
 
-- **System 2 — Per-Call Intelligence:** Analyzes individual sales calls and extracts useful insights from each conversation.
-- **System 1 — Daily Sales Intelligence:** Brings call-level information together to highlight broader patterns, recurring objections, and potential opportunities.
-- **Shared RAG Layer:** Provides relevant business context to support both types of analysis.
+- **System 2 — Per-Call Intelligence:** Analyzes individual sales conversations and extracts actionable insights.
+- **System 1 — Daily Sales Intelligence:** Combines call-level information to identify broader patterns, recurring objections, and potential opportunities.
+- **Shared RAG Layer:** Provides relevant business context to both systems.
+- **Error Handling:** Supports more reliable workflow execution by addressing processing failures and exceptions.
 
-The goal is simple: move beyond call summaries and make sales conversations more useful at both the individual and team levels.
+The goal is to move beyond call summaries and make sales conversations more useful for individual follow-ups and broader sales decisions.
 
 ## At a Glance
 
-| Area | What it does |
+| Area | Capability |
 |---|---|
-| Call analysis | Turns individual conversations into structured insights |
-| Daily intelligence | Highlights patterns across multiple calls |
+| Call analysis | Extracts structured insights from individual conversations |
+| Daily intelligence | Identifies patterns across aggregated call data |
 | Shared knowledge | Adds relevant business context through RAG |
-| Audio resilience | Tested with noisy, low-quality recordings at a 6 kHz sample rate |
+| Audio resilience | Tested with noisy, low-quality audio at a 6 kHz sample rate |
 | Data privacy | Uses masking layers to help protect sensitive customer information |
+| Error handling | Includes workflow-level handling of errors and exceptions |
 | Automation | Coordinates processing through n8n workflows |
 
 ---
 
 ## Architecture
 
-The diagrams below explain how the two systems fit together, how each analysis path works, and where privacy and reliability considerations come into play.
+The diagrams below explain how the two systems work together, how each analytical path is organized, and how privacy and error handling fit into the overall design.
 
-They show the system at a conceptual level. Proprietary workflow logic, internal configuration, and sensitive integration details are intentionally excluded.
+They are intentionally high-level: the aim is to explain the engineering approach without exposing proprietary workflow logic, credentials, or internal configuration.
 
 ### 01. System Architecture
 
-The two systems address different questions: *What happened in this call?* and *What are we learning from all our calls?* Both draw on a shared knowledge layer for business context.
+Both systems use the same knowledge foundation but serve different purposes. System 2 focuses on individual calls, while System 1 looks for patterns across sales activity.
 
-**[Keep your existing System Architecture Mermaid diagram here.]**
+```mermaid
+flowchart TB
+    CALLS([Sales Call Data])
+
+    subgraph ANALYTICS["ANALYTICAL LAYER"]
+        direction LR
+        S2["System 2<br/>Per-Call Intelligence"]
+        S1["System 1<br/>Daily Sales Intelligence"]
+    end
+
+    subgraph KNOWLEDGE["SHARED KNOWLEDGE LAYER"]
+        direction LR
+        KB[("Business Knowledge")]
+        RAG["Retrieval<br/>& Context"]
+        KB --> RAG
+    end
+
+    RESULTS([Actionable Sales Intelligence])
+
+    CALLS --> S2
+    CALLS --> S1
+
+    RAG -. Relevant context .-> S2
+    RAG -. Relevant context .-> S1
+
+    S2 --> RESULTS
+    S1 --> RESULTS
+
+    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE,stroke-width:1.5px
+    classDef system fill:#312E81,stroke:#A78BFA,color:#F5F3FF,stroke-width:1.5px
+    classDef knowledge fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1,stroke-width:1.5px
+    classDef result fill:#164E63,stroke:#22D3EE,color:#CFFAFE,stroke-width:1.5px
+
+    class CALLS source
+    class S1,S2 system
+    class KB,RAG knowledge
+    class RESULTS result
+
+    style ANALYTICS fill:#111827,stroke:#64748B,color:#F8FAFC
+    style KNOWLEDGE fill:#0F2927,stroke:#2DD4BF,color:#F0FDFA
+```
 
 ### 02. System 2 — Per-Call Intelligence
 
-System 2 focuses on one conversation at a time. It takes a call recording through the analysis process and produces structured insights that can help with follow-up and sales decisions.
+System 2 takes an individual call through preparation and contextual analysis, then produces structured insights that can support follow-up and sales decisions.
 
-**[Keep your existing System 2 Mermaid diagram here.]**
+```mermaid
+flowchart LR
+    subgraph INPUT["01 · INPUT"]
+        direction TB
+        AUDIO([Call Recording])
+        PREP["Input Preparation<br/>& Validation"]
+        AUDIO --> PREP
+    end
+
+    subgraph ANALYSIS["02 · CONTEXTUAL ANALYSIS"]
+        direction TB
+        CONTEXT["Relevant Business<br/>Context"]
+        AI["AI Conversation<br/>Analysis"]
+        CONTEXT --> AI
+    end
+
+    subgraph OUTPUT["03 · RESULTS"]
+        direction TB
+        STRUCT["Structured<br/>Call Insights"]
+        REPORT([Analysis Report])
+        STRUCT --> REPORT
+    end
+
+    PREP --> AI
+    AI --> STRUCT
+
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE,stroke-width:1.5px
+    classDef process fill:#1E293B,stroke:#64748B,color:#F1F5F9,stroke-width:1.5px
+    classDef ai fill:#312E81,stroke:#A78BFA,color:#EDE9FE,stroke-width:1.5px
+    classDef output fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1,stroke-width:1.5px
+
+    class AUDIO input
+    class PREP,STRUCT process
+    class CONTEXT,AI ai
+    class REPORT output
+
+    style INPUT fill:#111827,stroke:#60A5FA,color:#DBEAFE
+    style ANALYSIS fill:#17152E,stroke:#A78BFA,color:#EDE9FE
+    style OUTPUT fill:#0F2927,stroke:#2DD4BF,color:#CCFBF1
+```
+
+**Purpose:** Turn a single sales conversation into useful, context-aware intelligence.
 
 ### 03. System 1 — Daily Sales Intelligence
 
-System 1 looks at the bigger picture. It brings together information from individual calls to help identify recurring objections, performance patterns, and opportunities that may not be obvious from a single conversation.
+System 1 looks at the bigger picture. It combines call-level results to highlight recurring objections, performance patterns, and potential opportunities.
 
-Quantitative aggregation and AI interpretation serve different purposes: validated data provides the numerical foundation, while AI helps interpret the results and explain meaningful patterns.
+Quantitative aggregation and AI interpretation have distinct roles: source data provides the numerical foundation, while AI helps interpret patterns and communicate the findings.
 
-**[Keep your existing System 1 Mermaid diagram here.]**
+```mermaid
+flowchart LR
+    subgraph DATA["01 · DATA FOUNDATION"]
+        direction TB
+        CALLDATA([Call-Level Results])
+        AGG["Aggregation<br/>& Validation"]
+        METRICS["Daily Metrics<br/>& Patterns"]
+        CALLDATA --> AGG --> METRICS
+    end
 
-### 04. Privacy & Reliability
+    subgraph INTELLIGENCE["02 · AI INTERPRETATION"]
+        direction TB
+        CONTEXT["Retrieved Business<br/>Context"]
+        SYNTHESIS["AI-Based<br/>Interpretation"]
+        CONTEXT --> SYNTHESIS
+    end
 
-Customer data protection and reliable execution are important considerations throughout an AI workflow. This diagram illustrates the intended approach to input validation, sensitive-data masking, output checks, exception handling, and monitoring.
+    subgraph DELIVERY["03 · DELIVERY"]
+        direction TB
+        REPORT["Daily Sales<br/>Intelligence"]
+        ACTIONS([Insights for<br/>Decision-Making])
+        REPORT --> ACTIONS
+    end
 
-**[Keep your existing Privacy & Reliability Mermaid diagram here.]**
+    METRICS --> SYNTHESIS
+    SYNTHESIS --> REPORT
 
-These diagrams describe the design at a high level. They are not a claim that every control operates identically across every processing path.
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE,stroke-width:1.5px
+    classDef data fill:#1E293B,stroke:#64748B,color:#F1F5F9,stroke-width:1.5px
+    classDef ai fill:#312E81,stroke:#A78BFA,color:#EDE9FE,stroke-width:1.5px
+    classDef output fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1,stroke-width:1.5px
+
+    class CALLDATA input
+    class AGG,METRICS data
+    class CONTEXT,SYNTHESIS ai
+    class REPORT,ACTIONS output
+
+    style DATA fill:#111827,stroke:#64748B,color:#F8FAFC
+    style INTELLIGENCE fill:#17152E,stroke:#A78BFA,color:#EDE9FE
+    style DELIVERY fill:#0F2927,stroke:#2DD4BF,color:#CCFBF1
+```
+
+**Purpose:** Turn individual call results into a broader view of sales activity.
+
+### 04. Privacy & Data Handling
+
+Sales conversations may contain personal or commercially sensitive information. The project includes masking layers intended to reduce unnecessary exposure of sensitive customer details.
+
+```mermaid
+flowchart TB
+    INPUT([Incoming Data])
+
+    subgraph PIPELINE["DATA PROCESSING"]
+        direction LR
+        VALIDATE["Validate<br/>& Prepare"]
+        MASK["Sensitive Data<br/>Masking"]
+        PROCESS["AI<br/>Processing"]
+        CHECK["Output<br/>Checks"]
+
+        VALIDATE --> MASK --> PROCESS --> CHECK
+    end
+
+    OUTPUT([Analysis Results])
+
+    INPUT --> VALIDATE
+    CHECK --> OUTPUT
+
+    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE,stroke-width:1.5px
+    classDef process fill:#1E293B,stroke:#64748B,color:#F1F5F9,stroke-width:1.5px
+    classDef security fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1,stroke-width:1.5px
+    classDef output fill:#164E63,stroke:#22D3EE,color:#CFFAFE,stroke-width:1.5px
+
+    class INPUT source
+    class VALIDATE,PROCESS,CHECK process
+    class MASK security
+    class OUTPUT output
+
+    style PIPELINE fill:#111827,stroke:#64748B,color:#F8FAFC
+```
+
+Masking is one part of privacy-aware processing; it does not replace access controls, secure credential management, or appropriate data-retention policies.
+
+### 05. Error Handling & Workflow Reliability
+
+AI workflows can encounter issues such as invalid inputs, failed processing steps, service errors, or unexpected outputs. Error handling helps make these failures easier to manage and reduces the risk of treating an unsuccessful execution as a successful result.
+
+The diagram below presents the error-handling approach at a conceptual level. It does not expose internal recovery rules or imply that every failure can be automatically recovered.
+
+```mermaid
+flowchart TB
+    START([Workflow Execution])
+
+    subgraph MAIN["MAIN PROCESSING PATH"]
+        direction TB
+        INPUT["Input Validation"]
+        PROCESS["Processing Steps"]
+        VERIFY["Result Validation"]
+        SUCCESS([Successful Result])
+
+        INPUT --> PROCESS --> VERIFY --> SUCCESS
+    end
+
+    START --> INPUT
+
+    INPUT -. Validation failure .-> ERROR
+    PROCESS -. Processing failure .-> ERROR
+    VERIFY -. Invalid or unexpected result .-> ERROR
+
+    subgraph HANDLING["ERROR HANDLING"]
+        direction TB
+        ERROR["Error Detection"]
+        CLASSIFY["Handle or Classify Failure"]
+        LOG["Error Details / Execution Record"]
+        NEXT["Recovery, Retry, or Controlled Stop"]
+
+        ERROR --> CLASSIFY --> LOG --> NEXT
+    end
+
+    NEXT --> ENDSTATE([Handled Exception])
+
+    classDef normal fill:#1E293B,stroke:#64748B,color:#F1F5F9,stroke-width:1.5px
+    classDef success fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1,stroke-width:1.5px
+    classDef error fill:#7F1D1D,stroke:#F87171,color:#FEE2E2,stroke-width:1.5px
+    classDef handling fill:#312E81,stroke:#A78BFA,color:#EDE9FE,stroke-width:1.5px
+
+    class START,INPUT,PROCESS,VERIFY normal
+    class SUCCESS success
+    class ERROR error
+    class CLASSIFY,LOG,NEXT,ENDSTATE handling
+
+    style MAIN fill:#111827,stroke:#64748B,color:#F8FAFC
+    style HANDLING fill:#17152E,stroke:#A78BFA,color:#EDE9FE
+```
+
+**Why it matters:** Error handling is part of building dependable automation, not just a response to something going wrong. The exact recovery behavior depends on the type of failure and the workflow path.
 
 ---
 
 ## Workflow Architecture
 
-The following screenshots show the n8n workflows behind the two systems. They provide a practical view of the workflow structure alongside the conceptual architecture above.
+The screenshots below show the n8n workflows behind the two systems. They complement the conceptual diagrams with a view of the actual workflow layouts.
 
 ### System 1 — Daily Sales Intelligence
 
 ![System 1 — n8n workflow](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System1%20-%20N8N%20workflow.jpg?raw=true)
 
-*Daily analysis across aggregated sales-call data.*
+*Workflow for daily sales intelligence and aggregated analysis.*
 
 ### System 2 — Per-Call Intelligence
 
 ![System 2 — n8n workflow](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System2%20-%20N8N%20workflow.jpg?raw=true)
 
-*Analysis of individual sales conversations.*
+*Workflow for processing and analyzing individual sales calls.*
 
 ---
 
 ## Demo — Real Sales Call Analysis
 
-This example pairs a sample outbound sales call with its corresponding AI-generated analysis report.
+This example pairs an outbound sales call recording with its corresponding AI-generated analysis report.
 
 **Scenario:** Scenario 5 — Outbound Call — Good Salesperson  
 **Call date:** October 7, 2026
 
 | Resource | Description |
 |---|---|
-| [Read the Analysis Report (PDF)](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Call%20Intelligence%20-%20Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson%20-%202026-10-07.pdf) | See the resulting call intelligence report |
+| [Read the Analysis Report (PDF)](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Call%20Intelligence%20-%20Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson%20-%202026-10-07.pdf) | Review the generated call intelligence report |
 | [Listen to the Sample Call (WAV)](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson.wav) | Listen to the audio used in the demonstration |
 
-The example illustrates how a sales conversation can be transformed into structured information for review and follow-up. It represents one scenario, not a comprehensive performance benchmark.
+The demo shows how a sales conversation can become structured information for review and follow-up. It represents one scenario, not a comprehensive performance benchmark.
 
 ---
 
 ## Engineering Highlights
 
-### 1. Handling Low-Quality Audio
+### Low-Quality Audio
 
-Sales recordings are not always clean. Background noise, limited bandwidth, and recording quality can all affect downstream analysis.
+Real-world recordings can contain noise and have limited bandwidth. During testing, the workflow successfully processed noisy, low-quality audio files with a **6 kHz sample rate**.
 
-During testing, the workflow successfully processed noisy, low-quality audio files with a **6 kHz sample rate**. This demonstrates that the tested workflow can handle conditions beyond ideal recordings, although results may vary with different audio, languages, and transcription models.
+This is evidence from the scenarios tested, not a guarantee of identical performance across all recordings, languages, or transcription models.
 
-### 2. Privacy-Aware Processing
+### Privacy-Aware Processing
 
-Sales conversations may contain personal and commercially sensitive information. The system includes **masking layers for sensitive customer information** to reduce unnecessary exposure during processing.
+Masking layers help reduce unnecessary exposure of sensitive customer information during processing. Masking should be considered alongside access controls, credential security, data retention, and safe handling of model inputs and outputs.
 
-Masking is one part of a broader privacy approach. Secure credentials, access controls, appropriate data retention, and careful handling of model inputs and outputs remain important.
+### Shared RAG
 
-### 3. Shared Knowledge Through RAG
+Both systems use a shared retrieval layer to bring relevant business knowledge into the analysis. This gives individual-call analysis and daily intelligence a common contextual foundation.
 
-Both systems use a shared retrieval layer to bring relevant business knowledge into their analysis. This helps connect individual conversations and daily sales patterns to a common business context.
+### Structured Data and AI Interpretation
 
-### 4. Separating Metrics from Interpretation
+The daily intelligence path separates numerical aggregation from AI-based interpretation. Where possible, metrics should be calculated from validated source data, while AI focuses on explaining patterns and generating higher-level insights.
 
-Daily sales intelligence combines quantitative aggregation with AI-based interpretation. Where possible, metrics should come from validated source data, while the language model focuses on explaining patterns and generating higher-level insights.
+### Error Handling
 
-### 5. Workflow-Based Automation
+The workflows include error-handling considerations for dealing with execution failures and exceptions. The aim is to make failures visible and manageable rather than silently treating every run as successful.
 
-The project uses n8n to coordinate the processing steps. The public repository focuses on the architecture, design decisions, demonstrations, and selected engineering considerations rather than exposing the complete proprietary implementation.
+### Workflow-Oriented Engineering
+
+n8n coordinates the automation, connecting processing steps and analytical components. The public repository documents the architecture and selected engineering decisions while keeping proprietary workflow logic private.
 
 ---
 
@@ -152,24 +363,34 @@ All conceptual architecture diagrams are embedded directly in this README using 
 
 ---
 
+## Project Proposal
+
+Explore the project proposal for an overview of the problem statement, objectives, proposed architecture, and expected outcomes.
+
+[**View Project Proposal (PDF)**](Docs/Proposal%20for%20Intelligent_Sales_Automation.pdf)
+
+---
+
 ## Scope & Transparency
 
 This repository is an **AI Engineering Case Study**, not a public release of the complete production workflow.
 
-It presents the project's architecture, analytical approach, selected workflow screenshots, and demonstration materials while keeping proprietary implementation details private.
+It shares the project's architecture, analytical approach, selected workflow screenshots, and demonstration materials while keeping proprietary implementation details private.
 
-The architecture diagrams are conceptual, and the audio-resilience result applies to the scenarios tested. Neither should be interpreted as a guarantee of production performance under all conditions.
+The diagrams describe the design at a high level. In particular, the error-handling diagram illustrates a conceptual control flow rather than guaranteeing specific retry, recovery, or logging behavior for every failure.
+
+Audio-resilience statements refer to the scenarios tested and should not be interpreted as universal performance guarantees.
 
 ---
 
 ## Future Directions
 
-Potential next steps include:
+Potential areas for further development include:
 
-- Evaluating analysis and transcription quality across a wider range of audio conditions.
+- Evaluating transcription and analysis quality across a wider range of audio conditions.
 - Adding regression tests for prompts and structured outputs.
 - Measuring retrieval quality and contextual grounding.
-- Tracking processing latency, cost, and failure rates.
+- Tracking latency, processing cost, and failure rates.
 - Further evaluating privacy controls and data-handling boundaries.
 - Incorporating human review for uncertain or high-impact findings.
 
@@ -177,7 +398,7 @@ Potential next steps include:
 
 ## Technology Focus
 
-`n8n` · `LLMs` · `Retrieval-Augmented Generation` · `AI Engineering` · `Sales Analytics` · `Workflow Automation` · `Data Privacy` · `Reliability`
+`n8n` · `LLMs` · `Retrieval-Augmented Generation` · `AI Engineering` · `Sales Analytics` · `Workflow Automation` · `Data Privacy` · `Error Handling` · `Reliability`
 
 ---
 
