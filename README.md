@@ -364,18 +364,6 @@ All conceptual architecture diagrams are embedded directly in this README using 
 
 ---
 
-## Scope & Transparency
-
-This repository is an **AI Engineering Case Study**, not a public release of the complete production workflow.
-
-It shares the project's architecture, analytical approach, selected workflow screenshots, and demonstration materials while keeping proprietary implementation details private.
-
-The diagrams describe the design at a high level. In particular, the error-handling diagram illustrates a conceptual control flow rather than guaranteeing specific retry, recovery, or logging behavior for every failure.
-
-Audio-resilience statements refer to the scenarios tested and should not be interpreted as universal performance guarantees.
-
----
-
 ## Future Directions
 
 Potential areas for further development include:
