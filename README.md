@@ -341,13 +341,19 @@ The public repository documents the architecture and engineering considerations 
 
 The repository includes the README and supporting directories:
 
-- [`Demo/`](./Demo) — demonstration materials.
-- [`Screenshots_workflow/`](./Screenshots_workflow) — workflow screenshots.
+- `Demo/` — demonstration materials.
+- `Screenshots_workflow/` — workflow screenshots.
+- `Docs/` — project documentation, including the [Project Proposal (PDF)](Docs/Proposal%20for%20Intelligent_Sales_Automation.pdf).
 
 All conceptual architecture diagrams are embedded directly in this README using Mermaid. No separate diagram files are required.
 
 ---
 
+## 📄 Project Proposal
+
+Explore the project proposal for an overview of the problem statement, objectives, proposed architecture, and expected outcomes.
+
+[**View Project Proposal (PDF)**](Docs/Proposal%20for%20Intelligent_Sales_Automation.pdf)
 ## Scope & Transparency
 
 This repository is an **AI Engineering Case Study**, not a public release of the complete production workflow.
