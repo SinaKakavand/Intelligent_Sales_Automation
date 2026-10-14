@@ -1,381 +1,325 @@
 # Intelligent Sales Automation
 
-**AI-Powered Sales Intelligence | n8n · LLMs · RAG**
+<p align="center">
+  <strong>Turning sales conversations into actionable intelligence.</strong>
+  <br />
+  AI Engineering · LLMs · RAG · Workflow Automation
+</p>
 
-An AI-driven sales intelligence system designed to transform sales conversations into structured insights, contextual analysis, and actionable sales intelligence.
-
-The system combines per-call conversation analysis, daily sales performance intelligence, and a shared Retrieval-Augmented Generation (RAG) layer within an automated workflow architecture.
-
-This repository documents the system architecture and engineering design without exposing proprietary workflow implementations.
+<p align="center">
+  <img src="https://img.shields.io/badge/AI-Engineering-7C3AED?style=flat-square" alt="AI Engineering" />
+  <img src="https://img.shields.io/badge/LLM-Powered-2563EB?style=flat-square" alt="LLM Powered" />
+  <img src="https://img.shields.io/badge/RAG-Context--Aware-0D9488?style=flat-square" alt="RAG" />
+  <img src="https://img.shields.io/badge/Orchestration-n8n-EA580C?style=flat-square" alt="n8n" />
+</p>
 
 ---
 
 ## Overview
 
-Sales conversations contain valuable information about customer needs, objections, buying intent, and sales performance. Extracting these insights consistently across multiple conversations requires a structured and scalable analytical process.
+Sales calls are more than conversations. They contain signals about customer needs, objections, buying intent, sales performance, and opportunities for improvement.
 
-Intelligent Sales Automation separates this process into two complementary intelligence engines supported by a shared knowledge retrieval layer.
+**Intelligent Sales Automation** turns those conversations into structured, context-aware sales intelligence through automated workflows and LLM-based analysis.
 
-- **System 1 — Daily Sales Intelligence:** Analyzes aggregated call data to identify trends, performance patterns, risks, and opportunities.
-- **System 2 — Per-Call Intelligence:** Processes individual conversations to extract structured insights and relevant follow-up actions.
-- **Shared RAG Layer:** Retrieves relevant business knowledge to ground both analytical engines in contextual information.
+The system is designed around two complementary analytical paths, supported by a shared Retrieval-Augmented Generation (RAG) layer:
 
-n8n orchestrates workflow execution and integrations, while LLM-based components perform conversational analysis and contextual reasoning.
+- **Per-Call Intelligence:** Understands individual conversations and extracts actionable insights.
+- **Daily Sales Intelligence:** Analyzes call-level information collectively to identify patterns, trends, and opportunities.
+- **Shared Knowledge Layer:** Provides relevant business context to both analytical paths.
 
-## Key Capabilities
+The goal is not simply to summarize calls. It is to make sales conversations more useful for decision-making.
 
-- AI-assisted sales conversation analysis
-- Context-aware intelligence using Retrieval-Augmented Generation
-- Daily sales performance analysis and trend identification
-- Structured analytical outputs and automated reporting
-- Modular workflow orchestration and service integration
-- Reliability engineering and error-handling design
+> **Engineering focus:** Context-aware reasoning, noisy-audio resilience, privacy-aware processing, and workflow reliability.
 
-*Capabilities should be interpreted according to the actual implementation.*
+## At a Glance
+
+| Area | What it does |
+|---|---|
+| Conversation analysis | Extracts structured insights from individual calls |
+| Sales intelligence | Identifies patterns across daily call data |
+| Knowledge grounding | Uses shared RAG to provide relevant business context |
+| Audio resilience | Successfully tested with noisy, low-quality audio at a 6 kHz sample rate |
+| Data privacy | Applies masking layers to sensitive customer information |
+| Automation | Coordinates processing through workflow orchestration |
 
 ---
 
-# System Architecture
+## Architecture
 
-## 01. Shared Knowledge & RAG Architecture
+The architecture is intentionally presented at a high level. These diagrams explain the system's engineering concepts without exposing proprietary workflow logic, internal configuration, or sensitive integration details.
 
-The shared knowledge layer separates document ingestion and indexing from online retrieval. Both intelligence engines retrieve relevant contextual evidence based on their specific analytical objectives.
+### 01. System Overview
+
+Both analytical systems use the same knowledge layer, but serve different decision-making needs.
 
 ```mermaid
 flowchart TB
-    subgraph INGEST["KNOWLEDGE INGESTION"]
-        direction LR
-        SRC(["Knowledge Sources"])
-        PARSE["Parse & Normalize"]
-        CHUNK["Chunking & Metadata"]
-        EMBED(["Embedding Model"])
-        INDEX[("Vector Index")]
-        STORE[("Document Store")]
+    A([Sales Call Data])
+    B[Per-Call Intelligence]
+    C[Daily Sales Intelligence]
+    D[(Shared Knowledge Layer)]
+    E[Contextual Retrieval]
+    F[Actionable Insights]
 
-        SRC --> PARSE --> CHUNK
-        CHUNK --> EMBED --> INDEX
-        CHUNK --> STORE
-    end
+    A --> B
+    A --> C
+    D --> E
+    E -. Context .-> B
+    E -. Context .-> C
+    B --> F
+    C --> F
 
-    subgraph RETRIEVAL["CONTEXT RETRIEVAL"]
-        direction LR
-        QUERY(["Analysis Query"])
-        PREP["Query Preparation"]
-        SEARCH{{"Semantic Retrieval"}}
-        RANK["Relevance Ranking"]
-        CONTEXT(["Grounded Context"])
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE
+    classDef ai fill:#312E81,stroke:#A78BFA,color:#EDE9FE
+    classDef data fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1
+    classDef output fill:#164E63,stroke:#22D3EE,color:#CFFAFE
 
-        QUERY --> PREP --> SEARCH --> RANK --> CONTEXT
-    end
-
-    INDEX -.-> SEARCH
-    STORE -.-> RANK
-
-    subgraph ENGINES["INTELLIGENCE CONSUMERS"]
-        direction LR
-        S2(["System 2<br/>Per-Call Intelligence"])
-        S1(["System 1<br/>Daily Intelligence"])
-    end
-
-    CONTEXT --> S2
-    CONTEXT --> S1
-
-    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE
-    classDef process fill:#172033,stroke:#475569,color:#E2E8F0
-    classDef knowledge fill:#142D2E,stroke:#34D399,color:#D1FAE5
-    classDef ai fill:#251B3D,stroke:#A78BFA,color:#EDE9FE
-
-    class SRC,QUERY,S1,S2 source
-    class PARSE,CHUNK,PREP,RANK process
-    class INDEX,STORE,SEARCH knowledge
-    class EMBED,CONTEXT ai
-
-    style INGEST fill:#101827,stroke:#334155
-    style RETRIEVAL fill:#101827,stroke:#334155
-    style ENGINES fill:#101827,stroke:#334155
+    class A input
+    class B,C,E ai
+    class D data
+    class F output
 ```
 
-**Core responsibilities:** Knowledge ingestion, document processing, embeddings, semantic retrieval, relevance ranking, and context assembly.
+### 02. Per-Call Intelligence — System 2
 
-## 02. System 2 — Per-Call Intelligence
-
-System 2 follows an event-driven processing model. Each completed call enters the pipeline, undergoes validation and contextual retrieval, and is analyzed to produce structured call-level intelligence.
+Each call is processed independently to produce structured information that can support follow-up and sales decisions.
 
 ```mermaid
 flowchart LR
-    subgraph EVENT["EVENT INGESTION"]
-        direction TB
-        TEL(["Telephony Platform"])
-        EVT(["Call Completed"])
-        PAY["Call Data & Metadata"]
-        VALID{"Valid Input?"}
+    A([Call Input])
+    B[Prepare & Validate]
+    C[Retrieve Context]
+    D[AI Analysis]
+    E[Structured Insights]
+    F([Reporting & Actions])
 
-        TEL --> EVT --> PAY --> VALID
-    end
+    A --> B --> D --> E --> F
+    C --> D
 
-    subgraph ANALYSIS["CALL INTELLIGENCE"]
-        direction TB
-        PREP["Context Preparation"]
-        RAG[["Shared RAG Service"]]
-        LLM(["Call Intelligence Engine"])
-        OUT["Structured Analysis"]
-        QA{"Output Valid?"}
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE
+    classDef process fill:#1E293B,stroke:#64748B,color:#F1F5F9
+    classDef ai fill:#312E81,stroke:#A78BFA,color:#EDE9FE
+    classDef output fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1
 
-        PREP --> LLM --> OUT --> QA
-        RAG -.-> LLM
-    end
-
-    subgraph OUTPUT["OPERATIONAL OUTPUTS"]
-        direction TB
-        REPORT[("Report Repository")]
-        CRM["CRM Integration"]
-        NOTIFY(["Notification Gateway"])
-        ESC(["Priority Escalation"])
-
-        REPORT --> CRM
-        REPORT --> NOTIFY
-    end
-
-    VALID -->|"Yes"| PREP
-    QA -->|"Yes"| REPORT
-    QA -->|"Critical Finding"| ESC
-    VALID -->|"No"| ERROR(["Exception Handler"])
-    QA -->|"Invalid Output"| ERROR
-
-    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE
-    classDef process fill:#172033,stroke:#475569,color:#E2E8F0
-    classDef ai fill:#251B3D,stroke:#A78BFA,color:#EDE9FE
-    classDef data fill:#142D2E,stroke:#34D399,color:#D1FAE5
-    classDef decision fill:#3B2A16,stroke:#FBBF24,color:#FEF3C7
-    classDef error fill:#3B1722,stroke:#FB7185,color:#FFE4E6
-
-    class TEL,EVT,NOTIFY source
-    class PAY,PREP,OUT,CRM process
-    class RAG,LLM ai
-    class REPORT data
-    class VALID,QA decision
-    class ERROR,ESC error
-
-    style EVENT fill:#101827,stroke:#334155
-    style ANALYSIS fill:#101827,stroke:#334155
-    style OUTPUT fill:#101827,stroke:#334155
+    class A input
+    class B,E process
+    class C,D ai
+    class F output
 ```
 
-**Core responsibilities:** Event ingestion, call analysis, contextual retrieval, structured output generation, reporting, and downstream actions.
+**Primary purpose:** Turn a single conversation into useful, context-aware sales intelligence.
 
-## 03. System 1 — Daily Sales Intelligence
+### 03. Daily Sales Intelligence — System 1
 
-System 1 analyzes a collection of calls within a defined reporting window. Deterministic data aggregation provides the quantitative foundation, while the intelligence engine interprets the results using relevant business context.
+Individual call results become a broader view of sales activity. Quantitative aggregation provides the foundation; AI helps interpret the resulting patterns.
+
+```mermaid
+flowchart LR
+    A([Call-Level Data])
+    B[Aggregate & Validate]
+    C[Daily Metrics]
+    D[Retrieve Business Context]
+    E[AI Interpretation]
+    F([Daily Intelligence Report])
+
+    A --> B --> C --> E
+    D --> E
+    E --> F
+
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE
+    classDef process fill:#1E293B,stroke:#64748B,color:#F1F5F9
+    classDef ai fill:#312E81,stroke:#A78BFA,color:#EDE9FE
+    classDef output fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1
+
+    class A input
+    class B,C process
+    class D,E ai
+    class F output
+```
+
+**Primary purpose:** Identify recurring objections, performance patterns, risks, and opportunities across multiple calls.
+
+### 04. Trust, Privacy & Reliability
+
+Audio quality, sensitive customer information, and workflow failures are practical engineering concerns—not afterthoughts.
 
 ```mermaid
 flowchart TB
-    subgraph SCHEDULE["BATCH ORCHESTRATION"]
-        direction LR
-        TRIGGER(["Scheduled Trigger"])
-        WINDOW["Reporting Window"]
-        COLLECT(["Daily Call Collection"])
+    A([Incoming Data])
+    B[Validation & Preparation]
+    C[Sensitive Data Masking]
+    D[AI Processing]
+    E[Output Checks]
+    F([Controlled Results])
 
-        TRIGGER --> WINDOW --> COLLECT
-    end
+    G[Failure Handling]
+    H[Execution Monitoring]
 
-    subgraph DATA["DATA ENGINEERING"]
-        direction LR
-        NORMALIZE["Normalize & Deduplicate"]
-        QUALITY{"Data Quality"}
-        KPI(["KPI Aggregation"])
-        DATASET[("Daily Dataset")]
+    A --> B --> C --> D --> E --> F
+    B -. Exceptions .-> G
+    D -. Failures .-> G
+    E -. Invalid Output .-> G
+    B -.-> H
+    D -.-> H
+    E -.-> H
 
-        NORMALIZE --> QUALITY
-        QUALITY -->|"Valid"| KPI --> DATASET
-    end
+    classDef input fill:#172554,stroke:#60A5FA,color:#DBEAFE
+    classDef security fill:#134E4A,stroke:#2DD4BF,color:#CCFBF1
+    classDef process fill:#1E293B,stroke:#64748B,color:#F1F5F9
+    classDef monitor fill:#312E81,stroke:#A78BFA,color:#EDE9FE
+    classDef output fill:#164E63,stroke:#22D3EE,color:#CFFAFE
 
-    subgraph INTEL["DAILY INTELLIGENCE"]
-        direction LR
-        QUERY["Analysis Query"]
-        RAG[["Shared RAG Service"]]
-        CONTEXT(["Metrics + Evidence"])
-        ENGINE(["Daily Intelligence Engine"])
-        FINDINGS["Trends · Risks · Opportunities"]
-
-        QUERY --> CONTEXT --> ENGINE --> FINDINGS
-        RAG -.-> CONTEXT
-    end
-
-    subgraph REPORTING["REPORTING"]
-        direction LR
-        CHECK{"Consistency Check"}
-        REPORT(["Daily Intelligence Report"])
-        STORE[("Report Repository")]
-        GATEWAY(["Reporting Gateway"])
-
-        CHECK -->|"Valid"| REPORT --> STORE --> GATEWAY
-    end
-
-    COLLECT --> NORMALIZE
-    QUALITY -->|"Invalid"| HOLD(["Data Quality Exception"])
-    DATASET --> QUERY
-    DATASET --> CONTEXT
-    FINDINGS --> CHECK
-
-    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE
-    classDef process fill:#172033,stroke:#475569,color:#E2E8F0
-    classDef ai fill:#251B3D,stroke:#A78BFA,color:#EDE9FE
-    classDef data fill:#142D2E,stroke:#34D399,color:#D1FAE5
-    classDef decision fill:#3B2A16,stroke:#FBBF24,color:#FEF3C7
-    classDef error fill:#3B1722,stroke:#FB7185,color:#FFE4E6
-
-    class TRIGGER,COLLECT,GATEWAY source
-    class WINDOW,NORMALIZE,KPI,QUERY,FINDINGS,REPORT process
-    class RAG,CONTEXT,ENGINE ai
-    class DATASET,STORE data
-    class QUALITY,CHECK decision
-    class HOLD error
-
-    style SCHEDULE fill:#101827,stroke:#334155
-    style DATA fill:#101827,stroke:#334155
-    style INTEL fill:#101827,stroke:#334155
-    style REPORTING fill:#101827,stroke:#334155
+    class A input
+    class C security
+    class B,D,E process
+    class G,H monitor
+    class F output
 ```
 
-**Core responsibilities:** Scheduled execution, data aggregation, performance analysis, trend identification, and consolidated reporting.
-
-## 04. Error Handling & Observability
-
-The reliability layer defines how processing failures are classified, retried, isolated, and investigated. Observability provides execution logs, metrics, traces, and alerts to support troubleshooting and operational monitoring.
-
-```mermaid
-flowchart TB
-    subgraph EXEC["EXECUTION CONTROL"]
-        direction LR
-        EVENT(["Workflow Event"])
-        IDEM["Idempotency Check"]
-        VALIDATE["Input Validation"]
-        RUN(["Workflow / AI Execution"])
-        RESULT{"Execution Result"}
-
-        EVENT --> IDEM --> VALIDATE --> RUN --> RESULT
-    end
-
-    subgraph RECOVERY["FAILURE RECOVERY"]
-        direction LR
-        CLASSIFY{"Failure Classification"}
-        RETRY["Bounded Retry"]
-        REPLAY(["Controlled Replay"])
-        DLQ[("Dead-Letter Queue")]
-        REVIEW(["Manual Review"])
-
-        CLASSIFY -->|"Transient"| RETRY
-        RETRY -->|"Retry Available"| REPLAY
-        RETRY -->|"Exhausted"| DLQ
-        CLASSIFY -->|"Permanent"| DLQ
-        DLQ --> REVIEW
-    end
-
-    subgraph OBS["OBSERVABILITY"]
-        direction LR
-        LOGS(["Structured Logs"])
-        METRICS(["Metrics & Latency"])
-        TRACE(["Execution Traces"])
-        ALERT{"Alert Threshold"}
-        INCIDENT(["Incident Notification"])
-
-        LOGS --> ALERT
-        METRICS --> ALERT
-        TRACE --> ALERT
-        ALERT --> INCIDENT
-    end
-
-    RESULT -->|"Success"| COMPLETE(["Continue Workflow"])
-    RESULT -->|"Failure"| CLASSIFY
-
-    RUN -.-> LOGS
-    RUN -.-> METRICS
-    RUN -.-> TRACE
-
-    REPLAY -.-> EVENT
-    REVIEW -.-> EVENT
-
-    classDef source fill:#172554,stroke:#60A5FA,color:#DBEAFE
-    classDef process fill:#172033,stroke:#475569,color:#E2E8F0
-    classDef recovery fill:#3B1722,stroke:#FB7185,color:#FFE4E6
-    classDef data fill:#142D2E,stroke:#34D399,color:#D1FAE5
-    classDef decision fill:#3B2A16,stroke:#FBBF24,color:#FEF3C7
-    classDef telemetry fill:#251B3D,stroke:#A78BFA,color:#EDE9FE
-
-    class EVENT,RUN,COMPLETE source
-    class IDEM,VALIDATE process
-    class CLASSIFY,RESULT,ALERT decision
-    class RETRY,REPLAY,REVIEW,INCIDENT recovery
-    class DLQ data
-    class LOGS,METRICS,TRACE telemetry
-
-    style EXEC fill:#101827,stroke:#334155
-    style RECOVERY fill:#17121F,stroke:#6B3046
-    style OBS fill:#101827,stroke:#4C3A70
-```
-
-**Core responsibilities:** Failure classification, retry control, exception isolation, event replay, logging, metrics, tracing, and incident notification.
+*The diagrams communicate the system's design at a conceptual level. They are not intended to expose implementation-specific workflow nodes or imply that every illustrated control is deployed in every processing path.*
 
 ---
 
-## Engineering Considerations
+## Workflow Architecture
 
-### Grounded Intelligence
+The diagrams below show the actual n8n workflows behind the two intelligence systems. They complement the high-level architecture diagrams with a visual reference to the workflow implementation.
 
-RAG provides contextual evidence to support analytical outputs. Retrieved information should be relevant to the analysis objective, and conclusions should remain distinguishable from unsupported assumptions.
+### System 1 — Daily Sales Intelligence
 
-### Deterministic Analytics
+![System 1 — n8n workflow](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System1%20-%20N8N%20workflow.jpg?raw=true)
 
-Quantitative metrics should be computed from validated data rather than generated freely by an LLM. The intelligence engine interprets these metrics to produce higher-level insights.
+*The workflow responsible for daily sales intelligence and aggregated analysis.*
 
-### Reliability and Recovery
+### System 2 — Per-Call Intelligence
 
-Transient failures, invalid payloads, and malformed AI outputs require different handling strategies. Retries should be bounded, and unresolved failures should be made available for investigation.
+![System 2 — n8n workflow](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System2%20-%20N8N%20workflow.jpg?raw=true)
 
-### Human Oversight
-
-Critical findings and uncertain analytical outputs may require review before downstream operational action.
+*The workflow responsible for processing and analyzing individual sales calls.*
 
 ---
 
-## Security and Privacy
+## Demo — Real Sales Call Analysis
 
-The repository is designed to document architecture without exposing proprietary workflow logic.
+This demonstration presents an outbound sales call featuring a good salesperson, along with the corresponding AI-generated call intelligence report.
 
-- No production credentials or API keys
-- No private webhook URLs or connection secrets
-- No real customer recordings or identifiable customer data
-- No confidential execution logs or production payloads
-- No proprietary workflow exports
+It provides a practical view of how the system transforms a sales conversation into structured analytical output.
 
-Demonstration data should be synthetic or appropriately anonymized.
+**Scenario:** Scenario 5 — Outbound Call — Good Salesperson  
+**Call date:** October 7, 2026
+
+| Resource | Description |
+|---|---|
+| [Read the Analysis Report (PDF)](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Call%20Intelligence%20-%20Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson%20-%202026-10-07.pdf) | Review the generated call intelligence report |
+| [Listen to the Sample Call (WAV)](https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson.wav) | Access the audio recording used in the demonstration |
+
+### What This Demo Illustrates
+
+- An example of an outbound sales conversation.
+- The relationship between a call recording and its corresponding analysis report.
+- How conversational data can be transformed into structured sales intelligence.
+
+*The demonstration illustrates one scenario and should not be interpreted as a comprehensive performance benchmark.*
+
 
 ---
 
-## Implementation Scope
 
-This repository focuses on architectural documentation and engineering design rather than publishing the complete n8n implementation.
+## Engineering Highlights
 
-Architectural components shown in the diagrams should be distinguished from features that are already implemented. Proposed mechanisms, including advanced retry handling, dead-letter processing, and observability, should not be represented as deployed capabilities unless verified.
+### 1. Resilience to Low-Quality Audio
+
+Real-world sales recordings are not always clean. Calls may contain background noise, limited bandwidth, weak microphones, or other recording artifacts.
+
+During testing, the workflow successfully processed audio files with a **6 kHz sample rate**, including low-quality recordings with substantial noise.
+
+This is a meaningful practical test because the system was evaluated beyond ideal recording conditions.
+
+The result describes the tested scenarios; it is not a guarantee of equivalent performance for every recording, language, noise level, or transcription model.
+
+### 2. Privacy-Aware Customer Data Handling
+
+Sales conversations can contain personally identifiable and commercially sensitive information.
+
+The system includes **masking layers for sensitive customer information** to reduce unnecessary exposure during processing.
+
+The intended privacy approach is to:
+
+- Identify sensitive information that should be protected.
+- Mask relevant customer details at appropriate processing stages.
+- Avoid exposing real customer information in public documentation and demonstrations.
+- Keep credentials, private integration details, and production payloads out of the repository.
+
+Masking is one layer of privacy protection, not a substitute for access controls, secure credential management, retention policies, or appropriate handling of model inputs and outputs.
+
+### 3. Shared RAG for Contextual Analysis
+
+Both intelligence systems use a shared retrieval layer to bring relevant business knowledge into the analysis process.
+
+This separates contextual knowledge retrieval from the analytical objectives of each system. Individual calls and daily aggregates can therefore be interpreted against a consistent knowledge foundation.
+
+### 4. Structured Analytics and AI Reasoning
+
+The daily intelligence path distinguishes quantitative aggregation from AI-based interpretation.
+
+Where possible, metrics should be computed from validated source data, while the language model focuses on explaining patterns and generating higher-level insights. This separation helps reduce reliance on unconstrained model-generated numbers.
+
+### 5. Workflow-Oriented Engineering
+
+The system is organized around automated workflow execution, with attention to input preparation, contextual retrieval, structured outputs, exception handling, and downstream reporting.
+
+The public repository documents the architecture and engineering decisions without publishing the complete proprietary workflow.
 
 ---
 
-## Future Improvements
+## Repository Contents
 
-- Retrieval quality evaluation and benchmarking
-- Automated analysis quality assessment
-- Improved failure recovery and controlled replay
-- Latency, cost, and reliability monitoring
-- Human feedback and review workflows
-- Regression testing for prompts and structured outputs
+The repository currently includes the README and the following supporting directories:
+
+- [`Demo/`](./Demo) — demonstration materials.
+- [`Screenshots_workflow/`](./Screenshots_workflow) — workflow screenshots.
+
+The architecture diagrams above are embedded directly in this README using Mermaid. No separate diagram files are required.
+
+---
+
+## Scope & Transparency
+
+This repository is an **AI Engineering Case Study**, not a public release of the complete production workflow.
+
+It is intended to communicate the system's design, analytical approach, and selected engineering considerations while keeping proprietary implementation details private.
+
+Architecture diagrams may include conceptual components used to explain design principles. They should not be interpreted as proof that every possible reliability mechanism, monitoring feature, or recovery strategy is currently deployed.
+
+Likewise, the audio resilience statement refers to the tests described above rather than a universal performance benchmark.
+
+---
+https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System1%20-%20N8N%20workflow.jpg
+https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Screenshots_workflow/System2%20-%20N8N%20workflow.jpg
+
+https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Call%20Intelligence%20-%20Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson%20-%202026-10-07.pdf
+https://github.com/SinaKakavand/Intelligent_Sales_Automation/blob/main/Demo/Scenario%205%20-%20Outbound%20Call%20-%20Good%20Salesperson.wav
+
+## Future Directions
+
+Potential areas for further development include:
+
+- Systematic evaluation of transcription and analysis quality across audio conditions.
+- Regression testing for prompts and structured outputs.
+- Retrieval quality evaluation and contextual grounding checks.
+- Monitoring of processing latency, cost, and failure rates.
+- More comprehensive evaluation of privacy controls and data-handling boundaries.
+- Human review and feedback for uncertain or high-impact findings.
 
 ---
 
 ## Technology Focus
 
-`n8n` · `LLMs` · `RAG` · `AI Engineering` · `Workflow Automation` · `Sales Intelligence` · `System Reliability`
+`n8n` · `LLMs` · `Retrieval-Augmented Generation` · `AI Engineering` · `Sales Analytics` · `Workflow Automation` · `Data Privacy` · `Reliability`
 
 ---
 
-**Intelligent Sales Automation**  
-*Turning sales conversations into actionable intelligence.*
+<p align="center">
+  <strong>Intelligent Sales Automation</strong>
+  <br />
+  Turning Sales Conversations into Actionable Intelligence.
+</p>
