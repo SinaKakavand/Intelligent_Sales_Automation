@@ -361,13 +361,6 @@ The repository includes the README and supporting materials:
 
 All conceptual architecture diagrams are embedded directly in this README using Mermaid. No separate diagram files are required.
 
----
-
-## Project Proposal
-
-Explore the project proposal for an overview of the problem statement, objectives, proposed architecture, and expected outcomes.
-
-[**View Project Proposal (PDF)**](Docs/Proposal%20for%20Intelligent_Sales_Automation.pdf)
 
 ---
 
